@@ -170,3 +170,25 @@ app.get('/ping', (req, res) => {
   app.get('/articles', (req, res) => {
     res.json(articles);
   })
+
+  app.get('/test',(req, res)=>{
+    console.log(req.query)
+    res.send("ok")
+
+  })
+
+  app.get('/user/:id',(req, res)=>{
+    console.log(req.params.id);
+
+    let id = req.params.id;
+
+    let user_len = users.length
+
+    for(let i=0; i < user_len; i++){
+        if(users[i].id == id){
+            res.send(users[i])
+        }
+    }
+
+    res.send('not found 404')
+  })
