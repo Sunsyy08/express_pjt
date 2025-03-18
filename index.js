@@ -17,3 +17,7 @@ app.get('/ping', (req, res) => {
   app.get('/ang', (req, res) => {
     res.send('gimo');
   });  
+
+  app.get('/abc', (req, res) => {
+    res.send('가나다');
+  });  
