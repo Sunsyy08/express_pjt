@@ -177,6 +177,10 @@ app.get('/ping', (req, res) => {
 
   })
 
+  app.get('/HowAreYou', (req, res) => {
+    res.send('Im goat');
+  }); 
+
   app.get('/user/:id',(req, res)=>{
     console.log(req.params.id);
 
