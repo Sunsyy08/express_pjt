@@ -180,6 +180,7 @@ app.get('/articles', (req, res) => {
   res.json(articles);
 })
 
+//Get
 app.get('/articles/:id', (req, res) => {
 
   let article_id = req.params.id
@@ -193,6 +194,7 @@ app.get('/articles/:id', (req, res) => {
 
 })
 
+//Post
 app.post('/articles', (req, res) => {
 
   let data = req.body
@@ -209,17 +211,24 @@ app.post('/articles', (req, res) => {
   return res.json("ok")
 })
 
-
+//Delete
 app.delete('/articles/:id', (req, res) => {
-  const articleId = parseInt(req.params.id); // URL에서 id 값 가져오기
-  const index = articles.findIndex(article => article.id === articleId);
 
-  if (index !== -1) {
-      articles.splice(index, 1); // 해당 index의 요소 삭제
-      res.json({ message: '게시글 삭제 완료!' });
-  } else {
-      res.status(404).json({ message: '게시글을 찾을 수 없음!' });
-  }
+  let id = req.params.id
+  console.log(id);
+  
+  articles.splice(id-1,1);
+
+  res.send('ok')
+  // const articleId = parseInt(req.params.id); // URL에서 id 값 가져오기
+  // const index = articles.findIndex(article => article.id === articleId);
+
+  // if (index !== -1) {
+  //     articles.splice(index, 1); // 해당 index의 요소 삭제
+  //     res.json({ message: '게시글 삭제 완료!' });
+  // } else {
+  //     res.status(404).json({ message: '게시글을 찾을 수 없음!' });
+  // }
 });
 
 
