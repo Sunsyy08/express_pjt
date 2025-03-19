@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 리스트</title>
+    <style>
+        body {
+            font-family: "Comic Sans MS", cursive, sans-serif;
+            background-color: #ffe4e1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 600px;
+            background: #fff0f5;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(255, 105, 180, 0.2);
+            border: 2px solid #ffb6c1;
+        }
+        h1 {
+            text-align: center;
+            color: #ff69b4;
+            font-size: 24px;
+        }
+        .post-form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 10px;
+            border: 2px solid #ffb6c1;
+        }
+        textarea {
+            resize: none;
+        }
+        button {
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #ff1493;
+            transform: scale(1.05);
+        }
+        .article {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 0 10px rgba(255, 105, 180, 0.2);
+            border: 2px dashed #ffb6c1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .article h3 {
+            margin: 0 0 5px 0;
+            color: #ff69b4;
+        }
+        .article p {
+            margin: 5px 0;
+        }
+        small {
+            color: #888;
+        }
+        /* 삭제 버튼 스타일 */
+        .delete-btn {
+            background-color: #ffb6c1;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-left: 10px;
+            box-shadow: 0 2px 5px rgba(255, 105, 180, 0.3);
+        }
+        .delete-btn:hover {
+            background-color: #ff69b4;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📌 귀여운 게시글 💖</h1>
+        <div class="post-form">
+            <input type="text" id="title" placeholder="제목을 입력하세요✨">
+            <textarea id="content" placeholder="내용을 작성해주세요! 🌸"></textarea>
+            <button onclick="createArticle()">💌 게시글 작성</button>
+        </div>
+        <div id="articles"></div>
+    </div>
+
+    <script>
+        async function fetchArticles() {
+            const response = await fetch('http://localhost:3000/articles');
+            const articles = await response.json();
+            const articlesDiv = document.getElementById('articles');
+            articlesDiv.innerHTML = '';
+
+            articles.forEach(article => {
+                const div = document.createElement('div');
+                div.classList.add('article');
+                div.innerHTML = `
+                    <div>
+                        <h3>💖 ${article.title}</h3>
+                        <p>${article.content}</p>
+                        <small>${new Date(article.date).toLocaleString()}</small>
+                    </div>
+                    <button class="delete-btn" onclick="deleteArticle(${article.id})">🗑 삭제</button>
+                `;
+                articlesDiv.appendChild(div);
+            });
+        }
+
+        async function createArticle() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            if (!title || !content) {
+                alert('제목과 내용을 입력하세요! 💕');
+                return;
+            }
+
+            const response = await fetch('http://localhost:3000/articles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content, author_id: 1, date: new Date().toISOString() })
+            });
+
+            if (response.ok) {
+                document.getElementById('title').value = '';
+                document.getElementById('content').value = '';
+                await fetchArticles();
+            } else {
+                alert('게시글 작성 실패! 😢');
+            }
+        }
+
+        async function deleteArticle(id) {
+            if (!confirm("정말 삭제하시겠어요? 🗑😢")) return;
+
+            const response = await fetch(`http://localhost:3000/articles/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert("게시글이 삭제되었습니다! 🗑✨");
+                await fetchArticles();
+            } else {
+                alert("삭제 실패! 😢");
+            }
+        }
+
+        fetchArticles();
+    </script>
+</body>
+</html>
