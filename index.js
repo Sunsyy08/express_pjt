@@ -207,8 +207,20 @@ app.post('/articles', (req, res) => {
 
   data.data = now;
 
+ 
   articles.push(data);
   return res.json("ok")
+})
+
+//Put
+app.put('/articles/:id', (req, res)=>{
+  
+  let id = req.params.id 
+  let data = req.body
+  console.log(data)
+  articles[id] = data
+  console.log(id)
+  res.send("ok")
 })
 
 //Delete
