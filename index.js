@@ -131,3 +131,17 @@ app.post("/articles/:id/comments", (req, res) => {
     res.json({ message: "댓글 추가 완료", commentId: this.lastID });
   });
 });
+
+// 특정 게시글의 댓글 조회
+app.get("/articles/:id/comments", (req, res) => {
+  const articleId = req.params.id; // URL에서 article ID 가져오기
+
+  const sql = `SELECT * FROM comments WHERE article_id = ? ORDER BY created_at DESC`;
+
+  db.all(sql, [articleId], (err, rows) => {
+      if (err) {
+          return res.status(500).json({ error: "댓글 조회 중 오류 발생: " + err.message });
+      }
+      res.json({ articleId, comments: rows });
+  });
+});
