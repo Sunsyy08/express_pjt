@@ -145,3 +145,29 @@ app.get("/articles/:id/comments", (req, res) => {
       res.json({ articleId, comments: rows });
   });
 });
+
+// 특정 댓글 수정(집에서 *미완성*)
+app.put('/comments/:commentId', (req, res) => {
+  let commentId = req.params.commentId;  // URL에서 댓글 ID 가져오기
+  let { content } = req.body;  // 요청 본문에서 수정할 내용 가져오기
+
+  if (!content) {
+      return res.status(400).json({ error: "수정할 댓글 내용을 입력하세요." });
+  }
+
+  const sql = `UPDATE comments SET content = ? WHERE id = ?`;
+  
+  db.run(sql, [content, commentId], function (err) {
+      if (err) {
+          return res.status(500).json({ error: "댓글 수정 중 오류 발생: " + err.message });
+      }
+
+      // 변경된 row가 없으면 해당 댓글이 존재하지 않는 것
+      if (this.changes === 0) {
+          return res.status(404).json({ error: "해당 댓글을 찾을 수 없습니다." });
+      }
+
+      res.json({ message: "댓글 수정 완료!", commentId });
+  });
+});
+
