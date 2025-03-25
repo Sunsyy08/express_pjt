@@ -16,12 +16,10 @@ function initDB() {
     if (err) {
       console.error("테이블 생성 에러:", err);
     } else {
-      console.log("테이블 준비 완료(articles)");
+      console.log("테이블 준비 완료 (articles)");
     }
   });
 
-  
-  // comments 테이블 생성
   db.run(`
     CREATE TABLE IF NOT EXISTS comments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +35,24 @@ function initDB() {
       console.log("테이블 준비 완료 (comments)");
     }
   });
+
+  // users 테이블 생성
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, (err) => {
+    if (err) {
+      console.error("테이블 생성 에러:", err);
+    } else {
+      console.log("테이블 준비 완료 (users)");
+    }
+  });
 }
 
 initDB();
+
 

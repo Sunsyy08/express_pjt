@@ -146,28 +146,74 @@ app.get("/articles/:id/comments", (req, res) => {
   });
 });
 
-// 특정 댓글 수정(집에서 *미완성*)
-app.put('/comments/:commentId', (req, res) => {
-  let commentId = req.params.commentId;  // URL에서 댓글 ID 가져오기
-  let { content } = req.body;  // 요청 본문에서 수정할 내용 가져오기
+// // 특정 댓글 수정(집에서 *미완성*)
+// app.put('/comments/:commentId', (req, res) => {
+//   let commentId = req.params.commentId;  // URL에서 댓글 ID 가져오기
+//   let { content } = req.body;  // 요청 본문에서 수정할 내용 가져오기
 
-  if (!content) {
-      return res.status(400).json({ error: "수정할 댓글 내용을 입력하세요." });
+//   if (!content) {
+//       return res.status(400).json({ error: "수정할 댓글 내용을 입력하세요." });
+//   }
+
+//   const sql = `UPDATE comments SET content = ? WHERE id = ?`;
+  
+//   db.run(sql, [content, commentId], function (err) {
+//       if (err) {
+//           return res.status(500).json({ error: "댓글 수정 중 오류 발생: " + err.message });
+//       }
+
+//       // 변경된 row가 없으면 해당 댓글이 존재하지 않는 것
+//       if (this.changes === 0) {
+//           return res.status(404).json({ error: "해당 댓글을 찾을 수 없습니다." });
+//       }
+
+//       res.json({ message: "댓글 수정 완료!", commentId });
+//   });
+// });
+
+app.post("/users", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "이메일과 비밀번호를 입력하세요." });
   }
 
-  const sql = `UPDATE comments SET content = ? WHERE id = ?`;
-  
-  db.run(sql, [content, commentId], function (err) {
-      if (err) {
-          return res.status(500).json({ error: "댓글 수정 중 오류 발생: " + err.message });
-      }
+  const sql = `INSERT INTO users (email, password) VALUES (?, ?)`;
 
-      // 변경된 row가 없으면 해당 댓글이 존재하지 않는 것
-      if (this.changes === 0) {
-          return res.status(404).json({ error: "해당 댓글을 찾을 수 없습니다." });
-      }
-
-      res.json({ message: "댓글 수정 완료!", commentId });
+  db.run(sql, [email, password], function (err) {
+    if (err) {
+      return res.status(500).json({ error: "회원가입 중 오류 발생: " + err.message });
+    }
+    res.json({ message: "회원가입 성공", userId: this.lastID });
   });
 });
+
+//로그인 API
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "이메일과 비밀번호를 입력하세요." });
+  }
+
+  const sql = `SELECT * FROM users WHERE email = ?`;
+
+  db.get(sql, [email], (err, user) => {
+    if (err) {
+      return res.status(500).json({ error: "로그인 중 오류 발생: " + err.message });
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "이메일이 없습니다" });
+    }
+
+    if (user.password !== password) {
+      return res.status(401).json({ error: "패스워드가 틀립니다" });
+    }
+
+    res.json({ message: "로그인 성공", userId: user.id });
+  });
+});
+
+
 
