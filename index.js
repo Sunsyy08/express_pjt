@@ -1,5 +1,7 @@
 const express = require('express');
 const app = express();
+const bcrypt = require('bcrypt');  //해싱
+const jwt = require('jsonwebtoken');
 
 
 const cors = require('cors');
@@ -35,19 +37,33 @@ app.post("/articles", (req, res) => {
     });
 });
 
-// 전체 아티클 리스트 주는 api를 만들어라
+// 게시글 조회 API - 로그인된 사용자만 조회 가능
 app.get('/articles', (req, res) => {
-  const sql = `SELECT * FROM articles`;
+  const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Bearer 토큰 추출
 
-  db.all(sql, [], (err, rows) => {
+  if (!token) {
+    return res.status(401).json({ error: "로그인이 필요합니다." });
+  }
+
+  // JWT 토큰 검증
+  jwt.verify(token, 'your_secret_key', (err, decoded) => {
     if (err) {
-      console.error("데이터 조회 중 오류 발생:", err);
-      return res.status(500).json({ error: "데이터 조회 중 오류 발생" });
+      return res.status(403).json({ error: "유효하지 않은 토큰입니다." });
     }
 
-    res.json({ articles: rows });
+    // 토큰이 유효한 경우, 게시글 조회
+    const sql = `SELECT * FROM articles`;
+
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        console.error("데이터 조회 중 오류 발생:", err);
+        return res.status(500).json({ error: "데이터 조회 중 오류 발생" });
+      }
+
+      res.json({ articles: rows });
+    });
   });
-})
+});
 
 // 개별 아티클 주는 api를 만들어
 app.get('/articles/:id', (req, res) => {
@@ -171,6 +187,9 @@ app.get("/articles/:id/comments", (req, res) => {
 //   });
 // });
 
+
+
+// 회원가입 API
 app.post("/users", (req, res) => {
   const { email, password } = req.body;
 
@@ -178,17 +197,24 @@ app.post("/users", (req, res) => {
     return res.status(400).json({ error: "이메일과 비밀번호를 입력하세요." });
   }
 
-  const sql = `INSERT INTO users (email, password) VALUES (?, ?)`;
-
-  db.run(sql, [email, password], function (err) {
+  // 비밀번호 해싱
+  bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) {
-      return res.status(500).json({ error: "회원가입 중 오류 발생: " + err.message });
+      return res.status(500).json({ error: "비밀번호 해싱 중 오류 발생: " + err.message });
     }
-    res.json({ message: "회원가입 성공", userId: this.lastID });
+
+    const sql = `INSERT INTO users (email, password) VALUES (?, ?)`;
+
+    db.run(sql, [email, hashedPassword], function (err) {
+      if (err) {
+        return res.status(500).json({ error: "회원가입 중 오류 발생: " + err.message });
+      }
+      res.json({ message: "회원가입 성공", userId: this.lastID });
+    });
   });
 });
 
-//로그인 API
+// 로그인 API
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -207,13 +233,42 @@ app.post("/login", (req, res) => {
       return res.status(404).json({ error: "이메일이 없습니다" });
     }
 
-    if (user.password !== password) {
-      return res.status(401).json({ error: "패스워드가 틀립니다" });
-    }
+    // bcrypt로 비밀번호 비교
+    bcrypt.compare(password, user.password, (err, isMatch) => {
+      if (err) {
+        return res.status(500).json({ error: "비밀번호 비교 중 오류 발생: " + err.message });
+      }
 
-    res.json({ message: "로그인 성공", userId: user.id });
+      if (!isMatch) {
+        return res.status(401).json({ error: "패스워드가 틀립니다" });
+      }
+
+      // JWT 생성
+      const token = jwt.sign(
+        { userId: user.id, email: user.email }, // 페이로드에 사용자 정보 넣기
+        'your_secret_key', // 비밀키 (서버에서만 알고 있어야 하는 키)
+        { expiresIn: '1h' } // 토큰 만료 시간 (예: 1시간)
+      );
+
+      res.json({ message: "로그인 성공", token });
+    });
   });
 });
 
 
+// 로그인 테스트 API (유효한 JWT 토큰을 확인)
+app.get('/logintest', (req, res) => {
+  const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Bearer 토큰 추출
+
+  if (!token) {
+    return res.status(401).send("로그인이 필요합니다.");
+  }
+
+  jwt.verify(token, 'your_secret_key', (err, decoded) => {
+    if (err) {
+      return res.status(403).send("유효하지 않은 토큰입니다.");
+    }
+    res.send('로그인 성공!');
+  });
+});
 
