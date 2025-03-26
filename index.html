@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>게시글 리스트</title>
     <style>
+        /* 기존 스타일 유지 */
         body {
             font-family: "Comic Sans MS", cursive, sans-serif;
             background-color: #ffe4e1;
@@ -27,20 +28,18 @@
             color: #ff69b4;
             font-size: 24px;
         }
-        .post-form {
+        /* 로그인/회원가입 폼 */
+        .auth-form {
             display: flex;
             flex-direction: column;
             margin-bottom: 20px;
         }
-        input, textarea, button {
+        input, button {
             margin: 5px 0;
             padding: 10px;
             font-size: 16px;
             border-radius: 10px;
             border: 2px solid #ffb6c1;
-        }
-        textarea {
-            resize: none;
         }
         button {
             background-color: #ff69b4;
@@ -54,6 +53,12 @@
             background-color: #ff1493;
             transform: scale(1.05);
         }
+        .post-form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        /* 게시글 리스트 */
         .article {
             background: #fff;
             padding: 15px;
@@ -64,16 +69,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .article h3 {
-            margin: 0 0 5px 0;
-            color: #ff69b4;
-        }
-        .article p {
-            margin: 5px 0;
-        }
-        small {
-            color: #888;
         }
         /* 삭제 버튼 스타일 */
         .delete-btn {
@@ -87,28 +82,110 @@
             cursor: pointer;
             transition: 0.3s;
             margin-left: 10px;
-            box-shadow: 0 2px 5px rgba(255, 105, 180, 0.3);
-        }
-        .delete-btn:hover {
-            background-color: #ff69b4;
-            transform: scale(1.1);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📌 귀여운 게시글 💖</h1>
-        <div class="post-form">
-            <input type="text" id="title" placeholder="제목을 입력하세요✨">
-            <textarea id="content" placeholder="내용을 작성해주세요! 🌸"></textarea>
-            <button onclick="createArticle()">💌 게시글 작성</button>
+
+        <!-- 로그인 / 회원가입 폼 -->
+        <div id="authSection">
+            <div class="auth-form" id="loginForm">
+                <h2>로그인</h2>
+                <input type="email" id="loginEmail" placeholder="이메일을 입력하세요" required>
+                <input type="password" id="loginPassword" placeholder="비밀번호를 입력하세요" required>
+                <button onclick="loginUser()">로그인</button>
+                <p>회원가입이 필요하신가요? <a href="javascript:void(0)" onclick="showRegisterForm()">회원가입</a></p>
+            </div>
+
+            <div class="auth-form" id="registerForm" style="display: none;">
+                <h2>회원가입</h2>
+                <input type="email" id="registerEmail" placeholder="이메일을 입력하세요" required>
+                <input type="password" id="registerPassword" placeholder="비밀번호를 입력하세요" required>
+                <button onclick="registerUser()">회원가입</button>
+                <p>이미 계정이 있으신가요? <a href="javascript:void(0)" onclick="showLoginForm()">로그인</a></p>
+            </div>
         </div>
-        <div id="articles"></div>
+
+        <!-- 게시글 작성 및 조회 -->
+        <div id="postSection" style="display: none;">
+            <div class="post-form">
+                <input type="text" id="title" placeholder="제목을 입력하세요✨">
+                <textarea id="content" placeholder="내용을 작성해주세요! 🌸"></textarea>
+                <button onclick="createArticle()">💌 게시글 작성</button>
+            </div>
+            <div id="articles"></div>
+        </div>
     </div>
 
     <script>
+        // 로그인 함수
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                alert('로그인 성공!');
+                showPostSection();
+            } else {
+                alert('로그인 실패! 이메일과 비밀번호를 확인하세요.');
+            }
+        }
+
+        // 회원가입 함수
+        async function registerUser() {
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+
+        // 서버에 요청을 보낸 후 오류 처리
+        try {
+            const response = await fetch('http://localhost:3000/users', {  // URL을 /users로 변경
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+
+            // 서버 응답에서 token을 확인하고 처리
+            if (response.ok) {
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    alert('회원가입 성공!');
+                    showPostSection();
+                } else {
+                    alert('회원가입 실패! 응답에서 token을 찾을 수 없습니다.');
+                }
+            } else {
+                alert(`회원가입 실패! 서버 응답: ${data.message || '알 수 없는 오류'}`);
+            }
+        } catch (error) {
+            alert('회원가입 요청 중 오류가 발생했습니다. 다시 시도해 주세요!');
+            console.error('회원가입 오류:', error);
+        }
+    }
+
+        // 게시글 리스트 조회
         async function fetchArticles() {
-            const response = await fetch('http://localhost:3000/articles');
+            const response = await fetch('http://localhost:3000/articles', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
             const articles = await response.json();
             const articlesDiv = document.getElementById('articles');
             articlesDiv.innerHTML = '';
@@ -128,6 +205,7 @@
             });
         }
 
+        // 게시글 작성 함수
         async function createArticle() {
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value.trim();
@@ -138,8 +216,11 @@
 
             const response = await fetch('http://localhost:3000/articles', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, content, author_id: 1, date: new Date().toISOString() })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ title, content, date: new Date().toISOString() })
             });
 
             if (response.ok) {
@@ -151,11 +232,15 @@
             }
         }
 
+        // 게시글 삭제 함수
         async function deleteArticle(id) {
             if (!confirm("정말 삭제하시겠어요? 🗑😢")) return;
 
             const response = await fetch(`http://localhost:3000/articles/${id}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
             });
 
             if (response.ok) {
@@ -166,7 +251,23 @@
             }
         }
 
-        fetchArticles();
+        // 로그인/회원가입 전환 함수
+        function showRegisterForm() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+        }
+
+        function showLoginForm() {
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+        }
+
+        // 게시글 작성 화면 표시
+        function showPostSection() {
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('postSection').style.display = 'block';
+            fetchArticles();
+        }
     </script>
 </body>
 </html>

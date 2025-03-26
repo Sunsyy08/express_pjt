@@ -33,10 +33,6 @@ function authMiddleware(req, res, next) {
 
 
 
-
-
-
-
 const cors = require('cors');
 app.use(cors());
 
@@ -55,8 +51,8 @@ app.listen(PORT, () => {
   console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
 
-
-//로그인 필요요
+//게시글 작성
+//로그인 필요
 app.post("/articles", authMiddleware, (req, res) => {
   console.log(req.user);  // req.user 확인
   const { title, content } = req.body;
@@ -80,7 +76,7 @@ app.post("/articles", authMiddleware, (req, res) => {
 
 
 // 게시글 조회 API - 로그인된 사용자만 조회 가능 
-// 로그인 불필요요
+// 로그인 불필요
 app.get('/articles', (req, res) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Bearer 토큰 추출
 
@@ -123,6 +119,34 @@ app.get('/articles', (req, res) => {
   });
 });
 
+// app.post("/articles/:id", authMiddleware, (req, res) => {
+//   const articleId = req.params.id; // URL에서 아티클 ID 가져오기
+//   const { title, content } = req.body; // 요청 본문에서 데이터 가져오기
+//   const userId = req.user?.id; // 로그인된 유저 ID 가져오기 (authMiddleware 사용)
+
+//   if (!userId) {
+//     return res.status(401).json({ error: "유효한 사용자 정보가 필요합니다." });
+//   }
+
+//   if (!title || !content) {
+//     return res.status(400).json({ error: "title과 content를 모두 제공해야 합니다." });
+//   }
+
+//   const sql = `
+//     INSERT INTO articles (id, title, content, created_at, user_id) 
+//     VALUES (?, ?, ?, DATETIME('now'), ?)
+//   `;
+
+//   db.run(sql, [articleId, title, content, userId], function (err) {
+//     if (err) {
+//       return res.status(500).json({ error: "아티클 저장 중 오류 발생: " + err.message });
+//     }
+//     res.json({ message: "아티클 생성 완료", articleId, userId });
+//   });
+// });
+
+
+
 
 // 개별 아티클 주는 api를 만들어
 app.get('/articles/:id', (req, res) => {
@@ -158,7 +182,7 @@ app.get('/articles/:id', (req, res) => {
 });
 
 //로그인 필요
-// 게시글이 본인인지 확인도 필요요
+// 게시글이 본인인지 확인도 필요
 app.delete('/articles/:id', authMiddleware, (req, res) => {
   const id = req.params.id;
   const userId = req.user.userId; // 로그인된 사용자의 userId
