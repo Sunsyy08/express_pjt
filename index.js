@@ -2,6 +2,36 @@ const express = require('express');
 const app = express();
 const bcrypt = require('bcrypt');  //해싱
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const secretKey = process.env.SECRET_KEY;
+
+
+function authMiddleware(req, res, next) {
+  console.log("dslfjl")
+  const authHeader = req.headers.authorization;
+  console.log(authHeader)
+
+  if (!authHeader) {
+    return res.status(401).send('인증 헤더 없음');
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      console.log(err)
+      return res.status(401).send('토큰 검증 실패');
+    }
+
+    // 인증 성공 시 decoded 안에 있는 사용자 정보 req에 저장
+    req.user = decoded;
+    next(); // 다음 미들웨어 or 라우터로
+  });
+}
+
+
+
+
 
 
 const cors = require('cors');
@@ -22,7 +52,9 @@ app.listen(PORT, () => {
   console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });
 
-app.post("/articles", (req, res) => {
+
+//로그인 필요요
+app.post("/articles", authMiddleware, (req, res) => {
 
   let { title, content } = req.body
 
@@ -37,7 +69,8 @@ app.post("/articles", (req, res) => {
     });
 });
 
-// 게시글 조회 API - 로그인된 사용자만 조회 가능
+// 게시글 조회 API - 로그인된 사용자만 조회 가능 
+// 로그인 불필요요
 app.get('/articles', (req, res) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Bearer 토큰 추출
 
@@ -46,7 +79,7 @@ app.get('/articles', (req, res) => {
   }
 
   // JWT 토큰 검증
-  jwt.verify(token, 'your_secret_key', (err, decoded) => {
+  jwt.verify(token, 'secretKey', (err, decoded) => {
     if (err) {
       return res.status(403).json({ error: "유효하지 않은 토큰입니다." });
     }
@@ -87,8 +120,9 @@ app.get('/articles/:id', (req, res) => {
 
 })
 
-
-app.delete("/articles/:id", (req, res) => {
+//로그인 필요
+// 게시글이 본인인지 확인도 필요요
+app.delete("/articles/:id", authMiddleware, (req, res) => {
   const id = req.params.id; // URL에서 id 가져오기
 
   const sql = 'DELETE FROM articles WHERE id = ?';
@@ -107,7 +141,8 @@ app.delete("/articles/:id", (req, res) => {
   res.send("ok")
 })
 
-app.put('/articles/:id', (req, res) => {
+// 로그인 필요요
+app.put('/articles/:id', authMiddleware, (req, res) => {
   let id = req.params.id
   let { title, content } = req.body
 
@@ -130,7 +165,8 @@ app.put('/articles/:id', (req, res) => {
 
 
 // 특정 아티클에 댓글 추가
-app.post("/articles/:id/comments", (req, res) => {
+// 로그인 필요요
+app.post("/articles/:id/comments", authMiddleware, (req, res) => {
   const articleId = req.params.id; // URL에서 아티클 ID 가져오기
   const content = req.body.content; // 요청 Body에서 content 가져오기
 
@@ -246,7 +282,7 @@ app.post("/login", (req, res) => {
       // JWT 생성
       const token = jwt.sign(
         { userId: user.id, email: user.email }, // 페이로드에 사용자 정보 넣기
-        'your_secret_key', // 비밀키 (서버에서만 알고 있어야 하는 키)
+        secretKey, // 비밀키 (서버에서만 알고 있어야 하는 키)
         { expiresIn: '1h' } // 토큰 만료 시간 (예: 1시간)
       );
 
@@ -257,14 +293,14 @@ app.post("/login", (req, res) => {
 
 
 // 로그인 테스트 API (유효한 JWT 토큰을 확인)
-app.get('/logintest', (req, res) => {
+app.get('/logintest', authMiddleware, (req, res) => {
   const token = req.headers.authorization && req.headers.authorization.split(' ')[1]; // Bearer 토큰 추출
 
   if (!token) {
     return res.status(401).send("로그인이 필요합니다.");
   }
 
-  jwt.verify(token, 'your_secret_key', (err, decoded) => {
+  jwt.verify(token, secretKey, (err, decoded) => {
     if (err) {
       return res.status(403).send("유효하지 않은 토큰입니다.");
     }
